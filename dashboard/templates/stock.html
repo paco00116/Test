@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>股票 {{ stock_id }}</h1>
+<canvas id="kChart" height="100"></canvas>
+<canvas id="volChart" height="60" style="margin-top:16px"></canvas>
+
+<script>
+fetch('/api/stock/{{ stock_id }}').then(r => r.json()).then(rows => {
+  const labels = rows.map(r => r.date);
+
+  new Chart(document.getElementById('kChart'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: '收盤', data: rows.map(r => r.close), borderColor: '#2e86de', tension: 0.1 },
+      { label: '最高', data: rows.map(r => r.high),  borderColor: '#10ac84', borderDash: [4,4], tension: 0.1 },
+      { label: '最低', data: rows.map(r => r.low),   borderColor: '#ee5253', borderDash: [4,4], tension: 0.1 }
+    ]},
+    options: { interaction: { mode: 'index', intersect: false } }
+  });
+
+  new Chart(document.getElementById('volChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      label: '成交量',
+      data: rows.map(r => r.volume),
+      backgroundColor: '#8395a7'
+    }]}
+  });
+});
+</script>
+{% endblock %}

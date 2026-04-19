@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>每日績效</h1>
+<canvas id="cumChart" height="80"></canvas>
+<canvas id="winChart" height="80" style="margin-top:24px"></canvas>
+<canvas id="pnlChart" height="80" style="margin-top:24px"></canvas>
+
+<script>
+fetch('/api/performance').then(r => r.json()).then(data => {
+  const labels = data.map(x => x.date);
+
+  new Chart(document.getElementById('cumChart'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: '累積淨損益 (%)',
+      data: data.map(x => (x.cumulative_pnl * 100).toFixed(2)),
+      borderColor: '#2e86de',
+      backgroundColor: 'rgba(46,134,222,0.15)',
+      fill: true, tension: 0.25
+    }]}
+  });
+
+  new Chart(document.getElementById('winChart'), {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: '每日勝率 (%)',
+      data: data.map(x => (x.win_rate * 100).toFixed(1)),
+      borderColor: '#10ac84', tension: 0.25
+    }]}
+  });
+
+  new Chart(document.getElementById('pnlChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{
+      label: '當日淨損益 (%)',
+      data: data.map(x => (x.net_pnl * 100).toFixed(2)),
+      backgroundColor: data.map(x => x.net_pnl >= 0 ? '#10ac84' : '#ee5253')
+    }]}
+  });
+});
+</script>
+{% endblock %}

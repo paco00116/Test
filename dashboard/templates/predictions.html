@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>明日預測 · {{ date or "無資料" }}</h1>
+{% if predictions %}
+<table class="tbl">
+  <thead>
+    <tr>
+      <th>股票</th><th>方向</th><th>進場</th><th>出場</th><th>停損</th>
+      <th>信心度</th><th>預期報酬</th><th>條件</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in predictions %}
+    <tr>
+      <td><a href="/stock/{{ p.stock_id }}">{{ p.stock_id }}</a></td>
+      <td class="{{ 'pos' if p.direction == 'long' else 'neg' }}">
+        {{ '多' if p.direction == 'long' else '空' }}
+      </td>
+      <td>{{ "%.2f"|format(p.entry_price) }}</td>
+      <td>{{ "%.2f"|format(p.exit_price) }}</td>
+      <td>{{ "%.2f"|format(p.stop_loss) }}</td>
+      <td>{{ "%.1f%%"|format(p.confidence * 100) }}</td>
+      <td class="{{ 'pos' if p.expected_return >= 0 else 'neg' }}">
+        {{ "%+.2f%%"|format(p.expected_return * 100) }}
+      </td>
+      <td class="small">{{ p.expression or '-' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">尚無預測資料。</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>總覽</h1>
+<div class="cards">
+  <div class="card">
+    <div class="label">累積交易筆數</div>
+    <div class="value">{{ total_trades }}</div>
+  </div>
+  <div class="card">
+    <div class="label">歷史勝率</div>
+    <div class="value">{{ "%.1f%%"|format(overall_winrate * 100) }}</div>
+  </div>
+  <div class="card">
+    <div class="label">累積淨損益 (相對)</div>
+    <div class="value {{ 'pos' if total_pnl >= 0 else 'neg' }}">
+      {{ "%+.2f%%"|format(total_pnl * 100) }}
+    </div>
+  </div>
+</div>
+
+<h2>近 30 日績效</h2>
+<canvas id="perfChart" height="80"></canvas>
+
+<h2>明日預測 ({{ latest_pred_date or "尚未產生" }})</h2>
+{% if predictions %}
+<table class="tbl">
+  <thead>
+    <tr>
+      <th>股票</th><th>方向</th><th>進場</th><th>出場</th><th>停損</th>
+      <th>信心度</th><th>預期報酬</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in predictions[:20] %}
+    <tr>
+      <td><a href="/stock/{{ p.stock_id }}">{{ p.stock_id }}</a></td>
+      <td class="{{ 'pos' if p.direction == 'long' else 'neg' }}">
+        {{ '多' if p.direction == 'long' else '空' }}
+      </td>
+      <td>{{ "%.2f"|format(p.entry_price) }}</td>
+      <td>{{ "%.2f"|format(p.exit_price) }}</td>
+      <td>{{ "%.2f"|format(p.stop_loss) }}</td>
+      <td>{{ "%.1f%%"|format(p.confidence * 100) }}</td>
+      <td class="{{ 'pos' if p.expected_return >= 0 else 'neg' }}">
+        {{ "%+.2f%%"|format(p.expected_return * 100) }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">尚無預測資料。請先執行 <code>python main.py run-once</code>。</p>
+{% endif %}
+
+<script>
+fetch('/api/performance').then(r => r.json()).then(data => {
+  const ctx = document.getElementById('perfChart');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(x => x.date),
+      datasets: [
+        {
+          label: '累積淨損益 (%)',
+          data: data.map(x => (x.cumulative_pnl * 100).toFixed(2)),
+          borderColor: '#2e86de',
+          backgroundColor: 'rgba(46,134,222,0.1)',
+          fill: true,
+          tension: 0.25,
+          yAxisID: 'y'
+        },
+        {
+          label: '每日勝率 (%)',
+          data: data.map(x => (x.win_rate * 100).toFixed(1)),
+          borderColor: '#10ac84',
+          backgroundColor: 'rgba(16,172,132,0.1)',
+          tension: 0.25,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y:  { type: 'linear', position: 'left',  title: { display: true, text: '損益 %' } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: '勝率 %' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

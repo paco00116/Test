@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>條件勝率排行</h1>
+<canvas id="condChart" height="100"></canvas>
+<table class="tbl">
+  <thead>
+    <tr>
+      <th>#</th><th>條件</th><th>方向</th><th>樣本</th><th>勝</th>
+      <th>勝率</th><th>平均報酬</th><th>Sharpe</th><th>更新時間</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in conditions %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td class="small">{{ c.expression }}</td>
+      <td class="{{ 'pos' if c.direction == 'long' else 'neg' }}">
+        {{ '多' if c.direction == 'long' else '空' }}
+      </td>
+      <td>{{ c.sample_size }}</td>
+      <td>{{ c.wins }}</td>
+      <td><b>{{ "%.1f%%"|format(c.win_rate * 100) }}</b></td>
+      <td class="{{ 'pos' if c.avg_return >= 0 else 'neg' }}">
+        {{ "%+.2f%%"|format(c.avg_return * 100) }}
+      </td>
+      <td>{{ "%.2f"|format(c.sharpe) }}</td>
+      <td class="small">{{ c.updated_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+const conds = {{ conditions|tojson }};
+const top = conds.slice(0, 20);
+new Chart(document.getElementById('condChart'), {
+  type: 'bar',
+  data: {
+    labels: top.map(c => c.name),
+    datasets: [{
+      label: '勝率 %',
+      data: top.map(c => (c.win_rate * 100).toFixed(1)),
+      backgroundColor: top.map(c => c.direction === 'long' ? '#10ac84' : '#ee5253')
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: { x: { min: 50, max: 100 } }
+  }
+});
+</script>
+{% endblock %}
